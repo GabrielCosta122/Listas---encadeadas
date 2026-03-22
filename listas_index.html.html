@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listas Encadeadas — Semana 8</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c27;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+  --green: #00e5a0;
+  --green-dim: rgba(0,229,160,0.12);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167,139,250,0.12);
+  --orange: #fb923c;
+  --orange-dim: rgba(251,146,60,0.12);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.12);
+  --mono: 'Space Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* Header */
+header {
+  margin-bottom: 48px;
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid rgba(0,229,160,0.2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-family: var(--mono);
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+h1 span { color: var(--green); }
+
+.lead {
+  font-size: 15px;
+  color: var(--muted);
+  max-width: 520px;
+  line-height: 1.7;
+}
+
+/* Section titles */
+.section-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Type tabs */
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.04em;
+}
+.tab:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+.tab.active[data-t="simples"] { background: var(--green-dim); color: var(--green); border-color: rgba(0,229,160,0.3); }
+.tab.active[data-t="dupla"] { background: var(--purple-dim); color: var(--purple); border-color: rgba(167,139,250,0.3); }
+.tab.active[data-t="circular"] { background: var(--orange-dim); color: var(--orange); border-color: rgba(251,146,60,0.3); }
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.input-wrap {
+  position: relative;
+}
+.input-wrap::before {
+  content: '>';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--green);
+}
+
+input {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 9px 12px 9px 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  width: 140px;
+  transition: border-color 0.2s;
+}
+input::placeholder { color: var(--muted); }
+input:focus { outline: none; border-color: rgba(0,229,160,0.4); }
+
+btn, button {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 16px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: all 0.18s;
+}
+
+.btn-add {
+  background: var(--green-dim);
+  color: var(--green);
+  border-color: rgba(0,229,160,0.25);
+}
+.btn-add:hover { background: rgba(0,229,160,0.2); }
+
+.btn-rem {
+  background: var(--red-dim);
+  color: var(--red);
+  border-color: rgba(248,113,113,0.25);
+}
+.btn-rem:hover { background: rgba(248,113,113,0.2); }
+
+.btn-clr {
+  background: var(--surface2);
+  color: var(--muted);
+  border-color: var(--border);
+}
+.btn-clr:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+/* Canvas */
+.canvas-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 20px;
+  min-height: 160px;
+  overflow-x: auto;
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.canvas-wrap::before {
+  content: attr(data-type);
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+svg.viz { overflow: visible; display: block; }
+
+.empty {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  padding: 40px 0;
+}
+.empty span { color: var(--green); }
+
+/* Log */
+.log {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  height: 18px;
+  margin-bottom: 24px;
+  transition: opacity 0.3s;
+}
+.log::before { content: '// '; color: var(--green); }
+
+/* Info box */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.info-box h3 {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.info-box h3.green { color: var(--green); }
+.info-box h3.purple { color: var(--purple); }
+.info-box h3.orange { color: var(--orange); }
+
+.info-box p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.info-box .tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+.tag.green { background: var(--green-dim); color: var(--green); }
+.tag.purple { background: var(--purple-dim); color: var(--purple); }
+.tag.orange { background: var(--orange-dim); color: var(--orange); }
+
+/* Complexity table */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 12px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+tbody td {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface2); }
+
+td.op { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+td.good { color: var(--green); font-family: var(--mono); font-size: 12px; }
+td.mid { color: var(--orange); font-family: var(--mono); font-size: 12px; }
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: gap;
+  gap: 12px;
+}
+footer p { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+footer span { color: var(--green); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="badge">SEMANA 8 — ESTRUTURA DE DADOS</div>
+    <h1>Listas<br><span>Encadeadas</span></h1>
+    <p class="lead">Visualizador interativo dos três tipos de listas encadeadas. Insira nós, remova-os e observe como os ponteiros se comportam em tempo real.</p>
+  </header>
+
+  <p class="section-title">Tipo de lista</p>
+
+  <div class="tabs">
+    <button class="tab active" data-t="simples" onclick="setType('simples')">→ Simples</button>
+    <button class="tab" data-t="dupla" onclick="setType('dupla')">⇄ Dupla</button>
+    <button class="tab" data-t="circular" onclick="setType('circular')">↻ Circular</button>
+  </div>
+
+  <div class="controls">
+    <div class="input-wrap">
+      <input type="text" id="val-input" placeholder="valor" maxlength="6" onkeydown="if(event.key==='Enter')addNode()"/>
+    </div>
+    <button class="btn-add" onclick="addNode()">inserir_nó()</button>
+    <button class="btn-rem" onclick="removeNode()">remover_último()</button>
+    <button class="btn-clr" onclick="clearAll()">limpar()</button>
+  </div>
+
+  <div class="canvas-wrap" id="canvas-wrap" data-type="LISTA SIMPLES">
+    <svg class="viz" id="viz" width="600" height="120"></svg>
+    <div class="empty" id="empty">Nenhum nó ainda. Digite um valor e pressione <span>inserir_nó()</span></div>
+  </div>
+
+  <div class="log" id="log">pronto para receber dados.</div>
+
+  <div class="info-box" id="info-box"></div>
+
+  <p class="section-title">Complexidade de operações</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Operação</th>
+          <th>Lista Simples</th>
+          <th>Lista Dupla</th>
+          <th>Lista Circular</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="op">inserir_início()</td>
+          <td class="good">O(1)</td>
+          <td class="good">O(1)</td>
+          <td class="good">O(1)</td>
+        </tr>
+        <tr>
+          <td class="op">inserir_fim()</td>
+          <td class="mid">O(n)</td>
+          <td class="good">O(1)*</td>
+          <td class="mid">O(n)</td>
+        </tr>
+        <tr>
+          <td class="op">remover_início()</td>
+          <td class="good">O(1)</td>
+          <td class="good">O(1)</td>
+          <td class="good">O(1)</td>
+        </tr>
+        <tr>
+          <td class="op">buscar()</td>
+          <td class="mid">O(n)</td>
+          <td class="mid">O(n)</td>
+          <td class="mid">O(n)</td>
+        </tr>
+        <tr>
+          <td class="op">acessar_anterior()</td>
+          <td class="mid">O(n)</td>
+          <td class="good">O(1)</td>
+          <td class="mid">O(n)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    <p>Estrutura de Dados · <span>Semana 8</span></p>
+    <p>Visualizador interativo · Listas Encadeadas</p>
+  </footer>
+
+</div>
+
+<script>
+let nodes = [], type = 'simples';
+const NW = 84, NH = 44, GAP = 50, PY = 62;
+
+const INFOS = {
+  simples: {
+    title: 'Lista Simplesmente Encadeada',
+    cls: 'green',
+    desc: 'Cada nó armazena um valor e um ponteiro para o próximo nó. O último nó aponta para null. A travessia é possível apenas em uma direção (→). É a estrutura mais simples e usa menos memória.',
+    tags: ['→ unidirecional', 'null no fim', 'O(1) inserção início', 'menos memória']
+  },
+  dupla: {
+    title: 'Lista Duplamente Encadeada',
+    cls: 'purple',
+    desc: 'Cada nó possui dois ponteiros: next (próximo) e prev (anterior). Permite percorrer a lista nos dois sentidos (← →). Usa mais memória, mas oferece maior flexibilidade nas operações.',
+    tags: ['⇄ bidirecional', 'ponteiro prev + next', 'O(1) inserção fim*', 'mais flexível']
+  },
+  circular: {
+    title: 'Lista Circular',
+    cls: 'orange',
+    desc: 'Similar à lista simples, mas o último nó aponta de volta para o primeiro (head), formando um ciclo fechado. Não existe null. Útil para estruturas que precisam de acesso cíclico contínuo.',
+    tags: ['↻ circular', 'sem null', 'acesso cíclico', 'escalonamento de processos']
+  }
+};
+
+const COLORS = {
+  simples: { stroke: '#00e5a0', arr: '#00e5a0', ptr: '#00e5a0', back: '#1c2e28' },
+  dupla:   { stroke: '#a78bfa', arr: '#a78bfa', ptr: '#a78bfa', back: '#231c35' },
+  circular:{ stroke: '#fb923c', arr: '#fb923c', ptr: '#fb923c', back: '#2e2018' }
+};
+
+const LABELS = { simples: 'LISTA SIMPLES', dupla: 'LISTA DUPLA', circular: 'LISTA CIRCULAR' };
+
+function setType(t) {
+  type = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+  document.getElementById('canvas-wrap').dataset.type = LABELS[t];
+  render(); setInfo(); log('tipo alterado → ' + t);
+}
+
+function addNode() {
+  const inp = document.getElementById('val-input');
+  const v = inp.value.trim();
+  if (!v) { inp.focus(); return; }
+  if (nodes.length >= 8) { log('máximo de 8 nós atingido!'); return; }
+  nodes.push(v);
+  inp.value = ''; inp.focus();
+  render();
+  log('inserir_nó("' + v + '") → OK · tamanho = ' + nodes.length);
+}
+
+function removeNode() {
+  if (!nodes.length) { log('erro: lista vazia!'); return; }
+  const v = nodes.pop();
+  render();
+  log('remover_último() → removeu "' + v + '" · tamanho = ' + nodes.length);
+}
+
+function clearAll() {
+  nodes = []; render();
+  log('limpar() → lista zerada.');
+}
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.textContent = msg; el.style.opacity = 1;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.opacity = 0.4, 3000);
+}
+
+function setInfo() {
+  const d = INFOS[type];
+  document.getElementById('info-box').innerHTML = `
+    <h3 class="${d.cls}">${d.title}</h3>
+    <p>${d.desc}</p>
+    <div class="tags">${d.tags.map(t => `<span class="tag ${d.cls}">${t}</span>`).join('')}</div>`;
+}
+
+function mkArrow(svg, id, color) {
+  const m = el('marker'); m.id = id;
+  m.setAttribute('viewBox','0 0 10 10'); m.setAttribute('refX','8'); m.setAttribute('refY','5');
+  m.setAttribute('markerWidth','6'); m.setAttribute('markerHeight','6'); m.setAttribute('orient','auto-start-reverse');
+  const p = el('path'); p.setAttribute('d','M2 1L8 5L2 9'); p.setAttribute('fill','none');
+  p.setAttribute('stroke', color); p.setAttribute('stroke-width','1.5');
+  p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round');
+  m.appendChild(p); svg.querySelector('defs').appendChild(m);
+}
+
+function el(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function txt(x, y, content, fontSize, color, anchor='middle', weight='400') {
+  const t = el('text');
+  t.setAttribute('x', x); t.setAttribute('y', y);
+  t.setAttribute('text-anchor', anchor); t.setAttribute('dominant-baseline','central');
+  t.setAttribute('font-size', fontSize); t.setAttribute('fill', color);
+  t.setAttribute('font-weight', weight);
+  t.setAttribute('font-family', fontSize <= 11 ? "'Space Mono', monospace" : "'DM Sans', sans-serif");
+  t.textContent = content; return t;
+}
+
+function render() {
+  const svg = document.getElementById('viz');
+  const empty = document.getElementById('empty');
+  svg.innerHTML = '<defs></defs>';
+  const c = COLORS[type];
+  mkArrow(svg, 'arr-fwd', c.arr);
+  mkArrow(svg, 'arr-bwd', '#a78bfa');
+  mkArrow(svg, 'arr-circ', '#fb923c');
+
+  if (!nodes.length) {
+    empty.style.display = 'block'; svg.style.display = 'none'; return;
+  }
+  empty.style.display = 'none'; svg.style.display = 'block';
+
+  const n = nodes.length;
+  const circ = type === 'circular';
+  const W = Math.max(n * (NW + GAP) - GAP + (circ ? 80 : 60) + 40, 400);
+  const H = circ ? 170 : 120;
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+
+  nodes.forEach((val, i) => {
+    const x = 20 + i * (NW + GAP), y = PY - NH / 2;
+
+    // Node bg
+    const rect = el('rect');
+    rect.setAttribute('x', x); rect.setAttribute('y', y);
+    rect.setAttribute('width', NW); rect.setAttribute('height', NH);
+    rect.setAttribute('rx', '8'); rect.setAttribute('fill', c.back);
+    rect.setAttribute('stroke', c.stroke); rect.setAttribute('stroke-width', '1.5');
+    svg.appendChild(rect);
+
+    // Divider
+    const div = el('line');
+    div.setAttribute('x1', x + NW * 0.6); div.setAttribute('y1', y + 6);
+    div.setAttribute('x2', x + NW * 0.6); div.setAttribute('y2', y + NH - 6);
+    div.setAttribute('stroke', c.stroke); div.setAttribute('stroke-width', '0.6');
+    div.setAttribute('opacity', '0.4'); svg.appendChild(div);
+
+    // Value
+    svg.appendChild(txt(x + NW * 0.3, PY, val, 14, '#e8e8f0', 'middle', '500'));
+
+    // Ptr label
+    const ptrText = (circ && i === n - 1) ? '⟳' : (i === n - 1 && type !== 'dupla') ? 'null' : 'ptr';
+    svg.appendChild(txt(x + NW * 0.8, PY, ptrText, 10, c.ptr, 'middle', '400'));
+
+    // Index
+    const idxLabel = (i === 0 ? 'head · ' : '') + '[' + i + ']';
+    svg.appendChild(txt(x + NW / 2, y - 14, idxLabel, 10, '#6b6b80', 'middle', '400'));
+
+    // Forward arrow
+    if (i < n - 1) {
+      const ax1 = x + NW, ay = type === 'dupla' ? PY - 9 : PY;
+      const line = el('line');
+      line.setAttribute('x1', ax1); line.setAttribute('y1', ay);
+      line.setAttribute('x2', ax1 + GAP - 2); line.setAttribute('y2', ay);
+      line.setAttribute('stroke', c.arr); line.setAttribute('stroke-width', '1.5');
+      line.setAttribute('marker-end', 'url(#arr-fwd)'); svg.appendChild(line);
+    }
+
+    // Backward arrow (dupla)
+    if (type === 'dupla' && i > 0) {
+      const line = el('line');
+      line.setAttribute('x1', x); line.setAttribute('y1', PY + 9);
+      line.setAttribute('x2', x - GAP + 2); line.setAttribute('y2', PY + 9);
+      line.setAttribute('stroke', '#a78bfa'); line.setAttribute('stroke-width', '1.5');
+      line.setAttribute('marker-end', 'url(#arr-bwd)'); svg.appendChild(line);
+    }
+  });
+
+  // Null (simples/dupla)
+  if (!circ && n > 0) {
+    const lx = 20 + n * (NW + GAP) - 10;
+    const dash = el('line');
+    dash.setAttribute('x1', 20 + (n-1)*(NW+GAP)+NW); dash.setAttribute('y1', PY);
+    dash.setAttribute('x2', lx + 4); dash.setAttribute('y2', PY);
+    dash.setAttribute('stroke', '#6b6b80'); dash.setAttribute('stroke-width','1');
+    dash.setAttribute('stroke-dasharray','4 3'); svg.appendChild(dash);
+    svg.appendChild(txt(lx + 10, PY, 'null', 11, '#6b6b80', 'start', '400'));
+  }
+
+  // Circular return arrow
+  if (circ && n > 0) {
+    const sx = 20 + (n-1)*(NW+GAP)+NW, sy = PY;
+    const ex = 20, ey = PY;
+    const path = el('path');
+    path.setAttribute('d', `M${sx} ${sy} C${sx+40} ${sy+72}, ${ex-40} ${ey+72}, ${ex} ${ey}`);
+    path.setAttribute('fill','none'); path.setAttribute('stroke','#fb923c');
+    path.setAttribute('stroke-width','1.5'); path.setAttribute('stroke-dasharray','6 3');
+    path.setAttribute('marker-end','url(#arr-circ)'); svg.appendChild(path);
+    svg.appendChild(txt((sx+ex)/2, PY+88, 'retorna ao head', 10, '#fb923c', 'middle', '400'));
+  }
+}
+
+setInfo(); render();
+</script>
+</body>
+</html>
